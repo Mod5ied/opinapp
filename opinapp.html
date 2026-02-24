@@ -863,6 +863,12 @@
         <input class="name-input" type="text" id="nameInput" placeholder="Your first name" autocomplete="given-name"
           autocorrect="off" spellcheck="false" />
         <div class="field-hint" id="nameHint">Please enter your name to continue.</div>
+
+        <label class="field-label" for="emailInput" style="margin-top:16px;">What's your email?</label>
+        <input class="name-input" type="email" id="emailInput" placeholder="you@example.com" autocomplete="email"
+          autocorrect="off" spellcheck="false" />
+        <div class="field-hint" id="emailHint">Please enter a valid email address.</div>
+
         <p class="fine-print" style="margin-top:16px;">Anonymous &nbsp;·&nbsp; No spam &nbsp;·&nbsp; 5 minutes</p>
       </div>
 
@@ -976,6 +982,7 @@
     var ENDPOINT = window.VITE_OPINAPP || 'https://your-n8n-endpoint.com/webhook/opinapp';
     var RESEARCH_BACKEND = window.VITE_RESEARCH_BACKEND || 'https://pyepiper.outray.app/webhook/web/research';
     var userName = '';
+    var userEmail = '';
     var answers = {};
     var current = 0;  // 0-indexed question index
     var SCREEN = 'welcome'; // 'welcome' | 'form' | 'share'
@@ -1073,13 +1080,24 @@
 
     /* ── Welcome → Form ────────────────────────────────────── */
     function startForm() {
-      var val = document.getElementById('nameInput').value.trim();
-      if (!val) {
+      var nameVal = document.getElementById('nameInput').value.trim();
+      var emailVal = document.getElementById('emailInput').value.trim();
+      var nameValid = nameVal.length > 0;
+      var emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal);
+
+      if (!nameValid) {
         document.getElementById('nameHint').classList.add('show');
         document.getElementById('nameInput').focus();
         return;
       }
-      userName = val;
+      if (!emailValid) {
+        document.getElementById('emailHint').classList.add('show');
+        document.getElementById('emailInput').focus();
+        return;
+      }
+
+      userName = nameVal;
+      userEmail = emailVal;
       document.getElementById('progressWrap').style.display = 'block';
       document.getElementById('backWrap').style.display = 'block';
       showScreen('form');
@@ -1163,6 +1181,7 @@
         operation: 'opinion',
         payload: {
           name: userName,
+          email: userEmail,
           tickets_count: 'none',
           submitted_at: new Date().toISOString(),
         },
@@ -1247,6 +1266,7 @@
         operation: 'opinion',
         payload: {
           name: userName,
+          email: userEmail,
           tickets_count: answers.tickets_count || '',
           total_paid_usd: answers.total_paid !== undefined ? answers.total_paid : 0,
           ever_disputed: answers.ever_disputed || '',
@@ -1270,8 +1290,8 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: userName,
-          ip_address: '',
+          name: userName,
+          email: userEmail,
           survey_data: payload.payload,
           submitted_at: new Date().toISOString(),
         }),
@@ -1380,9 +1400,12 @@
       });
     }
 
-    /* ── Enter key on name input ───────────────────────────── */
+    /* ── Enter key on name/email inputs ───────────────────────────── */
     document.addEventListener('DOMContentLoaded', function () {
       document.getElementById('nameInput').addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); startForm(); }
+      });
+      document.getElementById('emailInput').addEventListener('keydown', function (e) {
         if (e.key === 'Enter') { e.preventDefault(); startForm(); }
       });
     });
