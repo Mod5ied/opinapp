@@ -1,0 +1,1392 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="theme-color" content="#FAFAF8" />
+  <title>OpinApp — Sharing your opinion should be fun</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;0,900;1,700;1,900&display=swap"
+    rel="stylesheet" />
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    :root {
+      --orange: #FF6900;
+      --navy: #1E3A5F;
+      --dark: #1C1917;
+      --warm: #FAFAF8;
+      --muted: #78716C;
+      --stone: #E7E5E4;
+      --light: #F5F5F3;
+      --radius: 16px;
+      --safe-b: env(safe-area-inset-bottom, 0px);
+      --safe-t: env(safe-area-inset-top, 0px);
+    }
+
+    html,
+    body {
+      height: 100%;
+      font-family: 'Outfit', sans-serif;
+      background: var(--warm);
+      color: var(--dark);
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      touch-action: manipulation;
+    }
+
+    /* ── Desktop centering shell ───────────────────────────── */
+    .outer {
+      min-height: 100dvh;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      background: var(--warm);
+    }
+
+    /* ── Background mesh ────────────────────────────────── */
+    .bg-mesh {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(ellipse 100% 50% at 5% 10%, rgba(255, 105, 0, 0.14) 0%, transparent 55%),
+        radial-gradient(ellipse 80% 80% at 95% 90%, rgba(30, 58, 95, 0.12) 0%, transparent 55%),
+        #FAFAF8;
+    }
+
+    /* ── App shell — phone frame on desktop, full-bleed on mobile ── */
+    .app {
+      position: relative;
+      z-index: 1;
+      min-height: 100dvh;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding-top: var(--safe-t);
+      background: var(--warm);
+
+      /* Constrain to phone width on desktop */
+      max-width: 480px;
+      width: 100%;
+    }
+
+    /* ── Sticky top bar ────────────────────────────────── */
+    .top-bar {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      padding: 16px 20px 0;
+      background: rgba(250, 250, 248, 0.95);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    .logo-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 14px;
+      height: 36px;
+    }
+
+    /* ── Replace the img below with your actual Settlfines logo ── */
+    .logo-placeholder {
+      height: 32px;
+      width: 160px;
+      background: linear-gradient(90deg, var(--orange), var(--navy));
+      border-radius: 6px;
+      opacity: 0.15;
+    }
+
+    /* ── Progress bar ──────────────────────────────────── */
+    .progress-outer {
+      height: 3px;
+      background: var(--stone);
+      border-radius: 99px;
+      overflow: hidden;
+      margin-bottom: 0;
+    }
+
+    .progress-inner {
+      height: 100%;
+      background: linear-gradient(90deg, var(--orange), var(--navy));
+      border-radius: 99px;
+      transition: width 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .progress-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      padding: 6px 0 12px;
+    }
+
+    /* ── Scrollable content ────────────────────────────── */
+    .screen {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 24px 20px 0;
+      display: none;
+    }
+
+    .screen.active {
+      display: block;
+    }
+
+    /* ── Sticky bottom CTA ─────────────────────────────── */
+    .bottom-bar {
+      position: sticky;
+      bottom: 0;
+      padding: 12px 20px;
+      padding-bottom: calc(12px + var(--safe-b));
+      background: rgba(250, 250, 248, 0.97);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-top: 1px solid var(--stone);
+      display: none;
+    }
+
+    .bottom-bar.active {
+      display: block;
+    }
+
+    /* ── Buttons ───────────────────────────────────────── */
+    .btn {
+      width: 100%;
+      padding: 17px 24px;
+      border: none;
+      border-radius: 50px;
+      font-size: 16px;
+      font-weight: 700;
+      font-family: 'Outfit', sans-serif;
+      cursor: pointer;
+      letter-spacing: 0.01em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: transform 0.12s, box-shadow 0.12s, background 0.15s;
+      /* Proper touch target */
+      min-height: 56px;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    .btn:active {
+      transform: scale(0.97);
+    }
+
+    .btn-orange {
+      background: var(--orange);
+      color: white;
+      box-shadow: 0 4px 18px rgba(255, 105, 0, 0.38);
+    }
+
+    .btn-navy {
+      background: var(--navy);
+      color: white;
+      box-shadow: 0 4px 18px rgba(30, 58, 95, 0.32);
+    }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--muted);
+      border: 1.5px solid var(--stone);
+      box-shadow: none;
+      min-height: 48px;
+      font-size: 14px;
+      margin-top: 8px;
+    }
+
+    .btn-outline:active {
+      background: var(--light);
+    }
+
+    .btn:disabled {
+      background: var(--stone);
+      color: var(--muted);
+      box-shadow: none;
+    }
+
+    /* ── Welcome screen ────────────────────────────────── */
+    .welcome-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 105, 0, 0.08);
+      border: 1px solid rgba(255, 105, 0, 0.2);
+      border-radius: 50px;
+      padding: 6px 14px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--orange);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+
+    .welcome-badge-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--orange);
+    }
+
+    .welcome-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(28px, 8vw, 40px);
+      font-weight: 900;
+      line-height: 1.1;
+      color: var(--dark);
+      margin-bottom: 14px;
+    }
+
+    .welcome-title em {
+      color: var(--orange);
+      font-style: italic;
+    }
+
+    .welcome-body {
+      font-size: 15px;
+      line-height: 1.75;
+      color: var(--muted);
+      margin-bottom: 28px;
+    }
+
+    .welcome-points {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+
+    .wp-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 14px;
+      color: var(--dark);
+      line-height: 1.55;
+    }
+
+    .wp-num {
+      width: 22px;
+      height: 22px;
+      min-width: 22px;
+      border-radius: 50%;
+      background: rgba(255, 105, 0, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--orange);
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .divider {
+      width: 36px;
+      height: 2px;
+      background: var(--stone);
+      margin: 0 0 24px;
+      border-radius: 2px;
+    }
+
+    /* Name input */
+    .field-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    .name-input {
+      width: 100%;
+      padding: 15px 18px;
+      border: 1.5px solid var(--stone);
+      border-radius: var(--radius);
+      /* 16px minimum prevents iOS zoom */
+      font-size: 16px;
+      font-family: 'Outfit', sans-serif;
+      font-weight: 600;
+      color: var(--dark);
+      background: white;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      -webkit-appearance: none;
+    }
+
+    .name-input:focus {
+      border-color: var(--orange);
+      box-shadow: 0 0 0 3px rgba(255, 105, 0, 0.1);
+    }
+
+    .name-input::placeholder {
+      color: #C0BBB7;
+      font-weight: 400;
+    }
+
+    .field-hint {
+      font-size: 12px;
+      color: #ef4444;
+      margin-top: 6px;
+      display: none;
+    }
+
+    .field-hint.show {
+      display: block;
+    }
+
+    .fine-print {
+      font-size: 12px;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.6;
+      margin-top: 8px;
+      padding-bottom: 32px;
+    }
+
+    /* ── Question screen ───────────────────────────────── */
+    .q-eyebrow {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--orange);
+      margin-bottom: 10px;
+    }
+
+    .q-text {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(20px, 6vw, 26px);
+      font-weight: 700;
+      color: var(--dark);
+      line-height: 1.25;
+      margin-bottom: 8px;
+    }
+
+    .q-sub {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.6;
+      margin-bottom: 28px;
+    }
+
+    /* Choice tiles — large tap targets */
+    .choices {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .choice {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 16px 16px;
+      border: 1.5px solid var(--stone);
+      border-radius: var(--radius);
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--dark);
+      background: white;
+      /* Touch feedback */
+      transition: border-color 0.12s, background 0.12s, transform 0.1s;
+      -webkit-user-select: none;
+      user-select: none;
+      /* Ensure minimum touch target height */
+      min-height: 56px;
+    }
+
+    .choice:active {
+      transform: scale(0.985);
+      background: rgba(255, 105, 0, 0.04);
+    }
+
+    .choice.selected {
+      border-color: var(--orange);
+      background: rgba(255, 105, 0, 0.05);
+    }
+
+    .choice.selected .choice-dot {
+      border-color: var(--orange);
+      background: var(--orange);
+    }
+
+    .choice.selected .choice-dot::after {
+      content: '';
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: white;
+      display: block;
+    }
+
+    .choice.selected .choice-letter {
+      background: rgba(255, 105, 0, 0.14);
+      color: var(--orange);
+    }
+
+    .choice-dot {
+      width: 22px;
+      height: 22px;
+      min-width: 22px;
+      border-radius: 50%;
+      border: 2px solid var(--stone);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: border-color 0.12s, background 0.12s;
+    }
+
+    .choice-letter {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      min-width: 24px;
+      border-radius: 7px;
+      background: var(--light);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    /* Range slider */
+    .range-wrap {
+      padding: 4px 0 8px;
+    }
+
+    .range-limits {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+
+    input[type=range] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 99px;
+      outline: none;
+      cursor: pointer;
+      background: linear-gradient(90deg, var(--orange) var(--pct, 10%), var(--stone) var(--pct, 10%));
+      /* Larger invisible hit area on iOS */
+      padding: 8px 0;
+      background-clip: content-box;
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: white;
+      border: 2.5px solid var(--orange);
+      box-shadow: 0 2px 10px rgba(255, 105, 0, 0.35);
+      cursor: pointer;
+    }
+
+    input[type=range]::-moz-range-thumb {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: white;
+      border: 2.5px solid var(--orange);
+      box-shadow: 0 2px 10px rgba(255, 105, 0, 0.35);
+      cursor: pointer;
+      border: 2.5px solid var(--orange);
+    }
+
+    .range-display {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 42px;
+      font-weight: 800;
+      color: var(--orange);
+      line-height: 1;
+    }
+
+    .range-display-sub {
+      text-align: center;
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 6px;
+      margin-bottom: 8px;
+    }
+
+    /* Back link */
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--muted);
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: 'Outfit', sans-serif;
+      padding: 8px 0;
+      margin-bottom: 20px;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    .back-link:active {
+      color: var(--dark);
+    }
+
+    /* ── Share screen ──────────────────────────────────── */
+    .share-check {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: rgba(22, 163, 74, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    .share-check svg {
+      width: 28px;
+      height: 28px;
+    }
+
+    .share-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(26px, 7vw, 34px);
+      font-weight: 900;
+      line-height: 1.15;
+      color: var(--dark);
+      margin-bottom: 12px;
+    }
+
+    .share-title em {
+      color: var(--orange);
+      font-style: italic;
+    }
+
+    .share-body {
+      font-size: 15px;
+      line-height: 1.75;
+      color: var(--muted);
+      margin-bottom: 24px;
+    }
+
+    .share-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(30, 58, 95, 0.06);
+      border: 1px solid rgba(30, 58, 95, 0.15);
+      border-radius: 50px;
+      padding: 9px 18px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--navy);
+      margin-bottom: 32px;
+    }
+
+    .share-divider {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      text-align: center;
+      margin-bottom: 16px;
+    }
+
+    /* Share app buttons — full width rows on mobile */
+    .share-apps {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+
+    .share-app-btn {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px 18px;
+      border: 1.5px solid var(--stone);
+      border-radius: var(--radius);
+      background: white;
+      text-decoration: none;
+      color: var(--dark);
+      font-size: 15px;
+      font-weight: 600;
+      font-family: 'Outfit', sans-serif;
+      min-height: 64px;
+      transition: border-color 0.12s, background 0.12s, transform 0.1s;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    .share-app-btn:active {
+      transform: scale(0.985);
+      background: var(--light);
+    }
+
+    .share-app-btn svg {
+      width: 40px;
+      height: 40px;
+      flex-shrink: 0;
+    }
+
+    .share-app-meta {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .share-app-name {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--dark);
+    }
+
+    .share-app-hint {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 1px;
+    }
+
+    .share-app-arrow {
+      margin-left: auto;
+      color: var(--muted);
+      font-size: 18px;
+    }
+
+    /* Copy link */
+    .copy-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 32px;
+    }
+
+    .copy-input {
+      flex: 1;
+      padding: 13px 14px;
+      border: 1.5px solid var(--stone);
+      border-radius: 12px;
+      font-size: 13px;
+      font-family: 'Outfit', monospace;
+      color: var(--muted);
+      background: var(--light);
+      outline: none;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-width: 0;
+    }
+
+    .copy-btn {
+      padding: 13px 18px;
+      border: none;
+      border-radius: 12px;
+      background: var(--dark);
+      color: white;
+      font-size: 13px;
+      font-weight: 700;
+      font-family: 'Outfit', sans-serif;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: background 0.15s, transform 0.1s;
+    }
+
+    .copy-btn:active {
+      transform: scale(0.96);
+    }
+
+    .copy-btn.copied {
+      background: #16A34A;
+    }
+
+    .confirmation-box {
+      padding: 16px 18px;
+      background: #f0fdf4;
+      border: 1px solid #86efac;
+      border-radius: 14px;
+      font-size: 14px;
+      color: #14532d;
+      line-height: 1.6;
+      margin-bottom: 40px;
+    }
+
+    /* ── Slide transition ──────────────────────────────── */
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: none;
+      }
+    }
+
+    .slide-in {
+      animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1) both;
+    }
+
+    /* ── Dodge button ──────────────────────────────────── */
+    .dodge-wrap {
+      margin-top: 10px;
+      margin-bottom: 8px;
+      position: relative;
+      height: 64px;
+      overflow: visible;
+      z-index: 0;
+    }
+
+    .dodge-btn {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 16px 16px;
+      border: 1.5px solid var(--stone);
+      border-radius: var(--radius);
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--dark);
+      background: white;
+      min-height: 56px;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      position: absolute;
+      width: 100%;
+      top: 0;
+      transition: top 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+      will-change: top;
+      z-index: 10;
+    }
+
+    .dodge-btn:active {
+      background: rgba(255, 105, 0, 0.03);
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="outer">
+    <div class="bg-mesh"></div>
+
+    <div class="app">
+
+      <!-- ─── TOP BAR ──────────────────────────────────────────────── -->
+      <div class="top-bar">
+        <!-- ↓ Replace .logo-placeholder with your <img src="..." alt="Settlfines" /> -->
+        <div class="logo-wrap">
+          <svg width="auto" height={height} viewBox="0 0 675 110" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M39.8866 0H5.14666L52.7533 54.0399L0 109.367H37.3133L87.4932 54.0399L39.8866 0Z" fill="#FF6900" />
+            <path d="M93.9257 0H59.1857L106.792 54.0399L54.0391 109.367H91.3524L141.532 54.0399L93.9257 0Z"
+              fill="#FF6900" />
+            <path
+              d="M188.707 93.4586C181.098 93.4586 175.192 91.8282 170.99 88.5672C166.859 85.3063 164.721 80.8497 164.576 75.1974H174.359C174.504 77.4438 175.627 79.5816 177.729 81.6106C179.903 83.5671 183.562 84.5454 188.707 84.5454C193.345 84.5454 196.896 83.6396 199.36 81.828C201.823 79.9439 203.055 77.6612 203.055 74.98C203.055 72.5887 202.15 70.7408 200.338 69.4364C198.526 68.0596 195.591 67.1538 191.533 66.719L185.229 66.0668C179.722 65.4871 175.229 63.8566 171.75 61.1754C168.272 58.4217 166.533 54.5811 166.533 49.6534C166.533 45.9577 167.475 42.8054 169.359 40.1967C171.243 37.5155 173.852 35.4865 177.185 34.1096C180.519 32.6603 184.359 31.9357 188.707 31.9357C195.229 31.9357 200.519 33.385 204.577 36.2836C208.635 39.1822 210.737 43.4939 210.882 49.2186H201.099C201.026 46.8997 199.939 44.9432 197.838 43.3489C195.809 41.6822 192.765 40.8489 188.707 40.8489C184.649 40.8489 181.569 41.6822 179.468 43.3489C177.366 45.0156 176.316 47.1171 176.316 49.6534C176.316 51.8274 177.04 53.5665 178.49 54.8709C180.011 56.1753 182.475 57.0086 185.881 57.371L192.186 58.0232C198.418 58.6753 203.418 60.4145 207.186 63.2406C210.954 65.9943 212.838 69.9074 212.838 74.98C212.838 78.6033 211.787 81.828 209.686 84.6541C207.657 87.4078 204.831 89.5818 201.208 91.176C197.584 92.6978 193.418 93.4586 188.707 93.4586ZM252.636 93.676C247.563 93.676 243.179 92.8065 239.484 91.0673C235.788 89.3281 232.781 87.0455 230.462 84.2193C228.143 81.3207 226.404 78.096 225.244 74.5452C224.157 70.9944 223.614 67.3712 223.614 63.6754V61.7189C223.614 57.9507 224.157 54.2912 225.244 50.7404C226.404 47.1896 228.143 44.0011 230.462 41.175C232.781 38.2764 235.715 35.9937 239.266 34.327C242.889 32.5879 247.129 31.7183 251.984 31.7183C258.288 31.7183 263.47 33.0951 267.528 35.8488C271.658 38.53 274.702 42.0083 276.658 46.2838C278.687 50.5592 279.702 55.1245 279.702 59.9797V64.6537H228.179V56.8275H272.093L269.702 61.0667C269.702 56.9362 269.049 53.3854 267.745 50.4143C266.441 47.3708 264.484 45.0156 261.875 43.3489C259.267 41.6822 255.969 40.8489 251.984 40.8489C247.853 40.8489 244.411 41.7909 241.658 43.675C238.976 45.5591 236.947 48.1316 235.57 51.3926C234.266 54.6535 233.614 58.4217 233.614 62.6972C233.614 66.8277 234.266 70.5596 235.57 73.893C236.947 77.154 239.049 79.7627 241.875 81.7193C244.701 83.6034 248.288 84.5454 252.636 84.5454C257.201 84.5454 260.897 83.5309 263.723 81.5019C266.622 79.4729 268.361 77.1177 268.941 74.4365H278.724C277.926 78.4221 276.332 81.8642 273.941 84.7628C271.549 87.6614 268.542 89.8716 264.919 91.3934C261.296 92.9152 257.201 93.676 252.636 93.676ZM317.127 92.3717C312.779 92.3717 309.011 91.7557 305.822 90.5238C302.706 89.2919 300.279 87.1904 298.54 84.2193C296.873 81.1758 296.04 77.0815 296.04 71.9365V16.0658H306.04V73.2408C306.04 76.3569 306.873 78.7844 308.54 80.5236C310.279 82.1903 312.707 83.0237 315.823 83.0237H326.04V92.3717H317.127ZM286.039 41.5011V33.6748H326.04V41.5011H286.039ZM363.408 92.3717C359.061 92.3717 355.292 91.7557 352.104 90.5238C348.988 89.2919 346.56 87.1904 344.821 84.2193C343.154 81.1758 342.321 77.0815 342.321 71.9365V16.0658H352.321V73.2408C352.321 76.3569 353.155 78.7844 354.821 80.5236C356.561 82.1903 358.988 83.0237 362.104 83.0237H372.322V92.3717H363.408ZM332.321 41.5011V33.6748H372.322V41.5011H332.321ZM387.733 91.7195V12.3701H398.168V91.7195H387.733ZM379.689 20.6311V12.3701H398.168V20.6311H379.689ZM419.705 91.7195V30.0878C419.705 23.6384 421.408 18.8919 424.813 15.8484C428.219 12.8048 433.219 11.2831 439.814 11.2831H446.336V19.9789H438.075C435.393 19.9789 433.328 20.7398 431.879 22.2616C430.429 23.7109 429.705 25.7399 429.705 28.3486V91.7195H419.705ZM411.661 41.5011V33.6748H445.249V41.5011H411.661ZM459.597 91.7195V33.6748H470.032V91.7195H459.597ZM451.118 41.9359V33.6748H470.032V41.9359H451.118ZM462.532 24.3268C460.213 24.3268 458.474 23.7109 457.314 22.479C456.227 21.247 455.684 19.689 455.684 17.8049C455.684 15.9208 456.227 14.3628 457.314 13.1309C458.474 11.899 460.213 11.2831 462.532 11.2831C464.85 11.2831 466.553 11.899 467.64 13.1309C468.8 14.3628 469.38 15.9208 469.38 17.8049C469.38 19.689 468.8 21.247 467.64 22.479C466.553 23.7109 464.85 24.3268 462.532 24.3268ZM490.259 91.7195V33.6748H498.52V58.5666H497.216C497.216 52.8419 497.976 48.0229 499.498 44.1098C501.092 40.1242 503.484 37.1169 506.672 35.0879C509.861 32.9864 513.883 31.9357 518.738 31.9357H519.172C526.491 31.9357 531.89 34.2183 535.368 38.7836C538.919 43.3489 540.695 49.9433 540.695 58.5666V91.7195H530.26V56.3927C530.26 51.8998 528.992 48.3128 526.455 45.6316C523.919 42.8779 520.441 41.5011 516.02 41.5011C511.455 41.5011 507.759 42.9141 504.933 45.7403C502.107 48.5664 500.694 52.3346 500.694 57.0449V91.7195H490.259ZM584.462 93.676C579.389 93.676 575.005 92.8065 571.309 91.0673C567.613 89.3281 564.606 87.0455 562.287 84.2193C559.968 81.3207 558.229 78.096 557.07 74.5452C555.983 70.9944 555.439 67.3712 555.439 63.6754V61.7189C555.439 57.9507 555.983 54.2912 557.07 50.7404C558.229 47.1896 559.968 44.0011 562.287 41.175C564.606 38.2764 567.541 35.9937 571.092 34.327C574.715 32.5879 578.954 31.7183 583.809 31.7183C590.114 31.7183 595.295 33.0951 599.353 35.8488C603.484 38.53 606.527 42.0083 608.484 46.2838C610.513 50.5592 611.527 55.1245 611.527 59.9797V64.6537H560.005V56.8275H603.919L601.527 61.0667C601.527 56.9362 600.875 53.3854 599.571 50.4143C598.266 47.3708 596.31 45.0156 593.701 43.3489C591.092 41.6822 587.795 40.8489 583.809 40.8489C579.679 40.8489 576.237 41.7909 573.483 43.675C570.802 45.5591 568.773 48.1316 567.396 51.3926C566.092 54.6535 565.44 58.4217 565.44 62.6972C565.44 66.8277 566.092 70.5596 567.396 73.893C568.773 77.154 570.874 79.7627 573.701 81.7193C576.527 83.6034 580.114 84.5454 584.462 84.5454C589.027 84.5454 592.723 83.5309 595.549 81.5019C598.447 79.4729 600.187 77.1177 600.766 74.4365H610.549C609.752 78.4221 608.158 81.8642 605.766 84.7628C603.375 87.6614 600.368 89.8716 596.745 91.3934C593.121 92.9152 589.027 93.676 584.462 93.676ZM645.366 93.4586C637.757 93.4586 631.851 91.8282 627.648 88.5672C623.517 85.3063 621.38 80.8497 621.235 75.1974H631.017C631.162 77.4438 632.286 79.5816 634.387 81.6106C636.561 83.5671 640.221 84.5454 645.366 84.5454C650.003 84.5454 653.554 83.6396 656.018 81.828C658.482 79.9439 659.714 77.6612 659.714 74.98C659.714 72.5887 658.808 70.7408 656.996 69.4364C655.185 68.0596 652.25 67.1538 648.192 66.719L641.887 66.0668C636.38 65.4871 631.887 63.8566 628.409 61.1754C624.93 58.4217 623.191 54.5811 623.191 49.6534C623.191 45.9577 624.133 42.8054 626.017 40.1967C627.901 37.5155 630.51 35.4865 633.844 34.1096C637.177 32.6603 641.018 31.9357 645.366 31.9357C651.887 31.9357 657.177 33.385 661.235 36.2836C665.294 39.1822 667.395 43.4939 667.54 49.2186H657.757C657.685 46.8997 656.598 44.9432 654.496 43.3489C652.467 41.6822 649.424 40.8489 645.366 40.8489C641.308 40.8489 638.228 41.6822 636.126 43.3489C634.025 45.0156 632.974 47.1171 632.974 49.6534C632.974 51.8274 633.699 53.5665 635.148 54.8709C636.67 56.1753 639.134 57.0086 642.539 57.371L648.844 58.0232C655.076 58.6753 660.076 60.4145 663.844 63.2406C667.612 65.9943 669.497 69.9074 669.497 74.98C669.497 78.6033 668.446 81.828 666.344 84.6541C664.315 87.4078 661.489 89.5818 657.866 91.176C654.243 92.6978 650.076 93.4586 645.366 93.4586Z"
+              fill="#FF6900" />
+          </svg>
+        </div>
+        <!-- Progress (hidden on welcome & share) -->
+        <div id="progressWrap" style="display:none">
+          <div class="progress-outer">
+            <div class="progress-inner" id="progressFill" style="width:17%"></div>
+          </div>
+          <div class="progress-label"><span id="stepLabel">Question 1 of 6</span><span id="stepPct">17%</span></div>
+        </div>
+      </div>
+
+      <!-- ════════════════════════════════════════════════════════════
+       SCREEN 1 — WELCOME
+  ════════════════════════════════════════════════════════════ -->
+      <div class="screen active slide-in" id="screenWelcome">
+        <div class="welcome-badge"><span class="welcome-badge-dot"></span> 5 min &nbsp;·&nbsp; US drivers <span
+            class="welcome-badge-dot"></span></div>
+        <div class="welcome-title">We want to hear<br>from <em>real drivers.</em></div>
+        <p class="welcome-body">
+          Parking fines cost US drivers <strong>billions</strong> every year — and most people just pay up. We are
+          building a system to change that, and we need your honest take first.
+        </p>
+
+        <div class="welcome-points">
+          <div class="wp-row">
+            <div class="wp-num">1</div><span>How much parking fines have cost you in the last 2–3 years</span>
+          </div>
+          <div class="wp-row">
+            <div class="wp-num">2</div><span>Whether you have ever tried to fight one — and what happened</span>
+          </div>
+          <div class="wp-row">
+            <div class="wp-num">3</div><span>How you feel about a system that fights fines automatically</span>
+          </div>
+          <div class="wp-row">
+            <div class="wp-num">4</div><span>Your honest take on one-tap fine payment</span>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+        <label class="field-label" for="nameInput">What should we call you?</label>
+        <input class="name-input" type="text" id="nameInput" placeholder="Your first name" autocomplete="given-name"
+          autocorrect="off" spellcheck="false" />
+        <div class="field-hint" id="nameHint">Please enter your name to continue.</div>
+        <p class="fine-print" style="margin-top:16px;">Anonymous &nbsp;·&nbsp; No spam &nbsp;·&nbsp; 5 minutes</p>
+      </div>
+
+      <!-- ════════════════════════════════════════════════════════════
+       SCREEN 2 — QUESTIONS (rendered by JS)
+  ════════════════════════════════════════════════════════════ -->
+      <div class="screen" id="screenForm">
+        <div id="questionMount"></div>
+      </div>
+
+      <!-- ════════════════════════════════════════════════════════════
+       SCREEN 3 — SHARE
+  ════════════════════════════════════════════════════════════ -->
+      <div class="screen" id="screenShare">
+        <div class="share-check">
+          <svg viewBox="0 0 28 28" fill="none">
+            <circle cx="14" cy="14" r="14" fill="rgba(22,163,74,0.15)" />
+            <path d="M8 14l4 4 8-8" stroke="#16A34A" stroke-width="2.2" stroke-linecap="round"
+              stroke-linejoin="round" />
+          </svg>
+        </div>
+        <div class="share-title">Will you share this<br>with <em>two friends?</em></div>
+        <p class="share-body">For every two friends who complete this survey, you qualify for <strong>two free parking
+            fine dispute sessions</strong> when Settlfines launches in the US.</p>
+        <div class="share-pill">2 friends = 2 free dispute sessions at launch</div>
+
+        <div class="share-divider">Share via</div>
+        <div class="share-apps">
+
+          <!-- WhatsApp -->
+          <a class="share-app-btn" id="waBtn" href="#" target="_blank" rel="noopener noreferrer">
+            <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="40" height="40" rx="12" fill="#25D366" />
+              <path
+                d="M20 9C13.925 9 9 13.925 9 20c0 1.97.525 3.815 1.44 5.405L9 31l5.73-1.42A10.963 10.963 0 0 0 20 31c6.075 0 11-4.925 11-11S26.075 9 20 9Z"
+                fill="white" fill-opacity=".15" />
+              <path
+                d="M27.005 23.352c-.3-.15-1.773-.874-2.048-.973-.275-.1-.475-.15-.675.15-.2.3-.773.973-.948 1.173-.174.199-.349.224-.648.075-.3-.15-1.266-.466-2.41-1.485-.891-.793-1.492-1.773-1.667-2.072-.174-.3-.018-.462.131-.61.134-.134.3-.349.45-.524.149-.174.199-.299.299-.498.1-.2.05-.374-.025-.524-.075-.15-.675-1.623-.924-2.222-.244-.583-.491-.504-.675-.513l-.574-.01c-.2 0-.524.075-.799.374-.274.3-1.048 1.023-1.048 2.497 0 1.473 1.073 2.896 1.223 3.096.149.199 2.112 3.224 5.117 4.52.715.31 1.273.494 1.707.632.717.228 1.37.196 1.886.119.575-.086 1.773-.724 2.023-1.424.249-.699.249-1.298.174-1.423-.075-.124-.274-.199-.574-.349Z"
+                fill="white" />
+            </svg>
+            <div class="share-app-meta">
+              <span class="share-app-name">WhatsApp</span>
+              <span class="share-app-hint">Send to friends directly</span>
+            </div>
+            <span class="share-app-arrow">›</span>
+          </a>
+
+          <!-- Instagram DM -->
+          <a class="share-app-btn" id="igBtn" href="https://www.instagram.com/direct/inbox/" target="_blank"
+            rel="noopener noreferrer">
+            <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="ig" x1="0" y1="40" x2="40" y2="0" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stop-color="#F9A825" />
+                  <stop offset="40%" stop-color="#E1306C" />
+                  <stop offset="100%" stop-color="#833AB4" />
+                </linearGradient>
+              </defs>
+              <rect width="40" height="40" rx="12" fill="url(#ig)" />
+              <rect x="12" y="12" width="16" height="16" rx="4.5" stroke="white" stroke-width="1.8" fill="none" />
+              <circle cx="20" cy="20" r="4" stroke="white" stroke-width="1.8" fill="none" />
+              <circle cx="25.2" cy="14.8" r="1.2" fill="white" />
+            </svg>
+            <div class="share-app-meta">
+              <span class="share-app-name">Instagram</span>
+              <span class="share-app-hint">Open DMs and paste link</span>
+            </div>
+            <span class="share-app-arrow">›</span>
+          </a>
+
+          <!-- iMessage -->
+          <a class="share-app-btn" id="imBtn" href="#" target="_blank" rel="noopener noreferrer">
+            <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="40" height="40" rx="12" fill="#34C759" />
+              <path
+                d="M20 10C14.477 10 10 14.03 10 19c0 2.56 1.12 4.87 2.93 6.52-.28 1.6-1.02 3.03-1.93 4.08 1.64-.26 3.87-1.02 5.3-2.04A10.8 10.8 0 0 0 20 28c5.523 0 10-4.03 10-9s-4.477-9-10-9Z"
+                fill="white" />
+            </svg>
+            <div class="share-app-meta">
+              <span class="share-app-name">iMessage</span>
+              <span class="share-app-hint">Text two friends now</span>
+            </div>
+            <span class="share-app-arrow">›</span>
+          </a>
+
+        </div>
+
+        <p class="share-divider">Or copy the link</p>
+        <div class="copy-row">
+          <input class="copy-input" type="text" id="shareUrlInput" readonly onclick="this.select()" />
+          <button class="copy-btn" id="copyBtn" onclick="copyLink()">Copy</button>
+        </div>
+
+        <div class="confirmation-box">
+          Your response has been recorded. We will reach out when Settlfines launches in the US.
+        </div>
+      </div>
+
+      <!-- ─── BOTTOM BAR (sticky CTA) ──────────────────────────────── -->
+      <div class="bottom-bar active" id="bottomBar">
+        <button class="btn btn-orange" id="mainCta" onclick="ctaClick()">Let's go →</button>
+        <div id="backWrap" style="display:none">
+          <button class="btn btn-outline" onclick="goBack()">← Back</button>
+        </div>
+      </div>
+
+    </div><!-- /app -->
+  </div><!-- /outer -->
+
+  <script>
+    var ENDPOINT = window.VITE_OPINAPP || 'https://your-n8n-endpoint.com/webhook/opinapp';
+    var RESEARCH_BACKEND = window.VITE_RESEARCH_BACKEND || 'https://pyepiper.outray.app/webhook/web/research';
+    var userName = '';
+    var answers = {};
+    var current = 0;  // 0-indexed question index
+    var SCREEN = 'welcome'; // 'welcome' | 'form' | 'share'
+
+    var steps = [
+      {
+        id: 'tickets_count', type: 'choice',
+        question: 'How many parking tickets have you received in the last 2–3 years?',
+        sub: 'Include tickets from meters, lots, or enforcement officers.',
+        choices: [
+          { letter: 'A', value: 'none', label: 'None — I have been lucky', earlyExit: true },
+          { letter: 'B', value: '1-2', label: '1 to 2 tickets' },
+          { letter: 'C', value: '3-5', label: '3 to 5 tickets' },
+          { letter: 'D', value: '6+', label: '6 or more' },
+        ],
+      },
+      {
+        id: 'total_paid', type: 'range',
+        question: 'Roughly how much have you paid in parking fines over the last 2–3 years?',
+        sub: 'Slide to your best estimate — include tickets you paid without disputing.',
+        min: 0, max: 1000, step: 25, unit: '$', default: 100,
+      },
+      {
+        id: 'ever_disputed', type: 'choice',
+        question: 'Have you ever tried to dispute or fight a parking ticket?',
+        sub: '',
+        choices: [
+          { letter: 'A', value: 'yes_won', label: 'Yes — and I won' },
+          { letter: 'B', value: 'yes_lost', label: 'Yes — but I lost or gave up' },
+          { letter: 'C', value: 'no_unsure', label: 'No, I did not know I could' },
+          { letter: 'D', value: 'no_effort', label: 'No, it seemed like too much effort' },
+        ],
+      },
+      {
+        id: 'unexpected_feeling', type: 'choice',
+        question: 'When you got a ticket you felt was unfair, how did it make you feel?',
+        sub: 'Be honest — this is exactly what we need to understand.',
+        choices: [
+          { letter: 'A', value: 'frustrated', label: 'Frustrated, but I just paid and moved on' },
+          { letter: 'B', value: 'powerless', label: 'Powerless — the system feels stacked against me' },
+          { letter: 'C', value: 'angry', label: 'Genuinely angry — I felt targeted' },
+          { letter: 'D', value: 'indifferent', label: 'Indifferent — it is just part of city life' },
+        ],
+      },
+      {
+        id: 'want_settlfines', type: 'choice',
+        question: 'Settlfines automatically fights tickets using the same legal arguments lawyers charge hundreds for. Would you use it?',
+        sub: 'No lawyers. No forms. It analyses your ticket, submits a legal defence on your behalf — and ensures you win the case.',
+        dodgeLabel: 'Probably not',
+        choices: [
+          { letter: 'A', value: 'absolutely', label: 'Absolutely — sign me up' },
+          { letter: 'B', value: 'probably', label: 'Probably, depending on cost' },
+        ],
+      },
+      {
+        id: 'want_payment', type: 'choice',
+        question: 'Would you use a one-tap system to pay parking fines — Just snap the ticket, no portals, no re-entering cards, no stress?',
+        sub: 'Just confirm and it is done.',
+        dodgeLabel: 'No interest',
+        choices: [
+          { letter: 'A', value: 'yes', label: 'Yes — that would save real time' },
+          { letter: 'B', value: 'depends', label: 'Depends on the fees' },
+        ],
+      },
+    ];
+
+    /* ── Screen transitions ────────────────────────────────── */
+    function showScreen(name) {
+      SCREEN = name;
+      document.querySelectorAll('.screen').forEach(function (s) { s.classList.remove('active'); });
+      var el = document.getElementById('screen' + cap(name));
+      el.classList.add('active');
+      el.classList.remove('slide-in');
+      void el.offsetWidth;
+      el.classList.add('slide-in');
+      window.scrollTo(0, 0);
+    }
+
+    function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+    /* ── Progress ──────────────────────────────────────────── */
+    function updateProgress() {
+      var total = steps.length;
+      var pct = Math.round(((current + 1) / total) * 100);
+      document.getElementById('progressFill').style.width = pct + '%';
+      document.getElementById('stepLabel').textContent = 'Question ' + (current + 1) + ' of ' + total;
+      document.getElementById('stepPct').textContent = pct + '%';
+    }
+
+    /* ── CTA button handler ────────────────────────────────── */
+    function ctaClick() {
+      if (SCREEN === 'welcome') { startForm(); return; }
+      if (SCREEN === 'form') { goNext(); return; }
+    }
+
+    /* ── Welcome → Form ────────────────────────────────────── */
+    function startForm() {
+      var val = document.getElementById('nameInput').value.trim();
+      if (!val) {
+        document.getElementById('nameHint').classList.add('show');
+        document.getElementById('nameInput').focus();
+        return;
+      }
+      userName = val;
+      document.getElementById('progressWrap').style.display = 'block';
+      document.getElementById('backWrap').style.display = 'block';
+      showScreen('form');
+      renderQuestion();
+    }
+
+    /* ── Render question ───────────────────────────────────── */
+    function renderQuestion() {
+      var step = steps[current];
+      var mount = document.getElementById('questionMount');
+      updateProgress();
+      updateCta();
+
+      var html = '<div class="q-eyebrow">Question ' + (current + 1) + ' of ' + steps.length + '</div>'
+        + '<div class="q-text">' + step.question + '</div>';
+      if (step.sub) html += '<div class="q-sub">' + step.sub + '</div>';
+
+      if (step.type === 'choice') {
+        html += '<div class="choices">';
+        for (var i = 0; i < step.choices.length; i++) {
+          var c = step.choices[i];
+          var sel = answers[step.id] === c.value ? ' selected' : '';
+          html += '<div class="choice' + sel + '" onclick="pickChoice(\'' + step.id + '\',\'' + c.value + '\',' + (c.earlyExit ? 'true' : 'false') + ',this)">'
+            + '<div class="choice-dot"></div>'
+            + '<span class="choice-letter">' + c.letter + '</span>'
+            + '<span>' + c.label + '</span>'
+            + '</div>';
+        }
+        html += '</div>';
+
+        // Dodging "no" button
+        if (step.dodgeLabel) {
+          html += '<div class="dodge-wrap" id="dodgeWrap">'
+            + '<div class="dodge-btn" id="dodgeBtn">'
+            + '<div class="choice-dot"></div>'
+            + '<span class="choice-letter">C</span>'
+            + '<span>' + step.dodgeLabel + '</span>'
+            + '</div>'
+            + '</div>';
+        }
+      }
+
+      if (step.type === 'range') {
+        var val = answers[step.id] !== undefined ? answers[step.id] : step.default;
+        var pctR = Math.round(((val - step.min) / (step.max - step.min)) * 100);
+        html += '<div class="range-wrap">'
+          + '<div class="range-limits"><span>' + step.unit + step.min + '</span><span>' + step.unit + step.max + '+</span></div>'
+          + '<input type="range" id="rangeInput" min="' + step.min + '" max="' + step.max + '" step="' + step.step + '" value="' + val + '" style="--pct:' + pctR + '%" oninput="slideRange(\'' + step.id + '\',this)">'
+          + '<div class="range-display" id="rangeDisplay">' + step.unit + val + '</div>'
+          + '<div class="range-display-sub">estimated total</div>'
+          + '</div>';
+      }
+
+      mount.innerHTML = html;
+
+      // Wire up dodge button after render
+      if (step.dodgeLabel) {
+        initDodge(document.getElementById('dodgeBtn'));
+      }
+    }
+
+    /* Choice: select + auto-advance after brief delay */
+    function pickChoice(id, value, earlyExit, el) {
+      answers[id] = value;
+      var all = document.querySelectorAll('.choice');
+      for (var i = 0; i < all.length; i++) all[i].classList.remove('selected');
+      el.classList.add('selected');
+      updateCta();
+      if (earlyExit) {
+        // "None" selected on Q1 — affirm and skip to share
+        setTimeout(function () { skipToShare(); }, 350);
+      } else {
+        setTimeout(function () { goNext(); }, 300);
+      }
+    }
+
+    /* Early exit path: affirm & go straight to share screen */
+    function skipToShare() {
+      // Submit what we have (just the no-fine answer)
+      var payload = {
+        operation: 'opinion',
+        payload: {
+          name: userName,
+          tickets_count: 'none',
+          submitted_at: new Date().toISOString(),
+        },
+      };
+      fetch(ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      }).catch(function (e) { console.warn(e); });
+      openShareScreen();
+    }
+
+    function slideRange(id, input) {
+      var val = parseInt(input.value);
+      var step = steps[current];
+      answers[id] = val;
+      var pct = Math.round(((val - step.min) / (step.max - step.min)) * 100);
+      input.style.setProperty('--pct', pct + '%');
+      document.getElementById('rangeDisplay').textContent = (step.unit || '') + val;
+    }
+
+    /* ── Update CTA label ──────────────────────────────────── */
+    function updateCta() {
+      var btn = document.getElementById('mainCta');
+      var step = steps[current];
+      if (SCREEN === 'welcome') { btn.textContent = "Let's go →"; return; }
+      var isLast = current === steps.length - 1;
+      if (step.type === 'range') {
+        btn.textContent = isLast ? 'Submit →' : 'Continue →';
+        btn.className = 'btn ' + (isLast ? 'btn-navy' : 'btn-orange');
+      } else {
+        // choices auto-advance; show Continue as fallback
+        btn.textContent = isLast ? 'Submit →' : 'Continue →';
+        btn.className = 'btn ' + (isLast ? 'btn-navy' : 'btn-orange');
+      }
+    }
+
+    /* ── Navigation ────────────────────────────────────────── */
+    function goNext() {
+      var step = steps[current];
+      if (step.type === 'range' && answers[step.id] === undefined) answers[step.id] = step.default;
+      if (step.type === 'choice' && !answers[step.id]) {
+        // pulse choices
+        var all = document.querySelectorAll('.choice');
+        for (var i = 0; i < all.length; i++) {
+          (function (el) {
+            el.style.borderColor = 'rgba(255,105,0,0.35)';
+            setTimeout(function () { el.style.borderColor = ''; }, 600);
+          })(all[i]);
+        }
+        return;
+      }
+      if (current < steps.length - 1) {
+        current++;
+        renderQuestion();
+        window.scrollTo(0, 0);
+      } else {
+        doSubmit();
+      }
+    }
+
+    function goBack() {
+      if (SCREEN === 'form' && current > 0) {
+        current--;
+        renderQuestion();
+        window.scrollTo(0, 0);
+      } else if (SCREEN === 'form' && current === 0) {
+        document.getElementById('progressWrap').style.display = 'none';
+        document.getElementById('backWrap').style.display = 'none';
+        showScreen('welcome');
+        updateCta();
+      }
+    }
+
+    /* ── Submit ────────────────────────────────────────────── */
+    function doSubmit() {
+      var btn = document.getElementById('mainCta');
+      btn.textContent = 'Submitting…';
+      btn.disabled = true;
+
+      var payload = {
+        operation: 'opinion',
+        payload: {
+          name: userName,
+          tickets_count: answers.tickets_count || '',
+          total_paid_usd: answers.total_paid !== undefined ? answers.total_paid : 0,
+          ever_disputed: answers.ever_disputed || '',
+          unexpected_feeling: answers.unexpected_feeling || '',
+          want_settlfines: answers.want_settlfines || '',
+          want_payment: answers.want_payment || '',
+          submitted_at: new Date().toISOString(),
+        },
+      };
+
+      // Submit to main endpoint
+      fetch(ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+        .catch(function (e) { console.warn('Submission error:', e); });
+
+      // Submit to research backend for final submission
+      fetch(RESEARCH_BACKEND, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: userName,
+          ip_address: '',
+          survey_data: payload.payload,
+          submitted_at: new Date().toISOString(),
+        }),
+      })
+        .then(function (res) {
+          if (!res.ok) throw new Error('Research backend error: ' + res.status);
+          return res.json();
+        })
+        .then(function (data) { console.log('Research submission successful:', data); })
+        .catch(function (e) { console.warn('Research backend error:', e); })
+        .finally(function () { openShareScreen(); });
+    }
+
+    /* ── Share screen ──────────────────────────────────────── */
+    function openShareScreen() {
+      var url = window.location.href.split('?')[0];
+      var msg = encodeURIComponent('Hey! Quick survey about parking fines — takes 5 min and earns you free dispute sessions when Settlfines launches in the US: ' + url);
+
+      document.getElementById('waBtn').href = 'https://wa.me/?text=' + msg;
+      document.getElementById('imBtn').href = 'sms:&body=' + msg;
+      document.getElementById('shareUrlInput').value = url;
+
+      document.getElementById('progressWrap').style.display = 'none';
+      document.getElementById('bottomBar').style.display = 'none';
+
+      showScreen('share');
+    }
+
+    function copyLink() {
+      var input = document.getElementById('shareUrlInput');
+      input.select();
+      try { document.execCommand('copy'); } catch (e) { }
+      if (navigator.clipboard) navigator.clipboard.writeText(input.value).catch(function () { });
+      var btn = document.getElementById('copyBtn');
+      btn.textContent = 'Copied!';
+      btn.classList.add('copied');
+      setTimeout(function () { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2500);
+    }
+
+    /* ── Dodge button logic ────────────────────────────────── */
+    function initDodge(btn) {
+      if (!btn) return;
+
+      // Direction alternates: first dodge goes down, then up, then down...
+      var dodgeDir = 1;    // 1 = down, -1 = up
+      var dodging = false;
+      var returnTimer = null;
+      var DODGE_PX = 82;   // how far to jump (px) — must clear the button above
+      var DODGE_MS = 220;  // animation duration matches CSS transition
+      var RETURN_MS = 600;  // pause before snapping back to home (0)
+
+      function dodge() {
+        if (dodging) return;
+        dodging = true;
+
+        // Cancel any pending return
+        if (returnTimer) { clearTimeout(returnTimer); returnTimer = null; }
+
+        // Jump in current direction
+        btn.style.top = (dodgeDir * DODGE_PX) + 'px';
+
+        // Flip direction for next dodge
+        dodgeDir = -dodgeDir;
+
+        // After animation completes, schedule a return to home (top: 0)
+        returnTimer = setTimeout(function () {
+          btn.style.top = '0px';
+          // Allow next dodge only after return animation completes
+          setTimeout(function () { dodging = false; }, DODGE_MS);
+          returnTimer = null;
+        }, RETURN_MS);
+      }
+
+      // ── Desktop: track mouse proximity ──────────────────────
+      document.addEventListener('mousemove', function (e) {
+        var rect = btn.getBoundingClientRect();
+        var cx = rect.left + rect.width / 2;
+        var cy = rect.top + rect.height / 2;
+        var dist = Math.sqrt(Math.pow(e.clientX - cx, 2) + Math.pow(e.clientY - cy, 2));
+        if (dist < 60) dodge();
+      });
+
+      // ── Mobile: intercept touches aimed at the button ───────
+      // We listen on the whole document so we catch the finger
+      // before it lands, by tracking touchmove proximity
+      document.addEventListener('touchmove', function (e) {
+        var touch = e.touches[0];
+        var rect = btn.getBoundingClientRect();
+        var cx = rect.left + rect.width / 2;
+        var cy = rect.top + rect.height / 2;
+        var dist = Math.sqrt(Math.pow(touch.clientX - cx, 2) + Math.pow(touch.clientY - cy, 2));
+        if (dist < 60) dodge();
+      }, { passive: true });
+
+      // Intercept touchstart directly on button — dodge and cancel tap
+      btn.addEventListener('touchstart', function (e) {
+        e.preventDefault();
+        dodge();
+      }, { passive: false });
+
+      // Intercept click directly on button — dodge and swallow click
+      btn.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        dodge();
+      });
+    }
+
+    /* ── Enter key on name input ───────────────────────────── */
+    document.addEventListener('DOMContentLoaded', function () {
+      document.getElementById('nameInput').addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); startForm(); }
+      });
+    });
+  </script>
+</body>
+
+</html>
