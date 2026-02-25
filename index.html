@@ -143,6 +143,7 @@
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
       padding: 24px 20px 0;
+      padding-bottom: calc(100px + var(--safe-b));
       display: none;
     }
 
@@ -150,10 +151,15 @@
       display: block;
     }
 
-    /* ── Sticky bottom CTA ─────────────────────────────── */
+    /* ── Fixed bottom CTA ─────────────────────────────── */
     .bottom-bar {
-      position: sticky;
+      position: fixed;
       bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 480px;
+      z-index: 100;
       padding: 12px 20px;
       padding-bottom: calc(12px + var(--safe-b));
       background: rgba(250, 250, 248, 0.97);
@@ -813,7 +819,7 @@
       <div class="top-bar">
         <!-- ↓ Replace .logo-placeholder with your <img src="..." alt="Settlfines" /> -->
         <div class="logo-wrap">
-          <svg width="auto" height={height} viewBox="0 0 675 110" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <svg width="180" height="180" viewBox="0 0 675 110" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M39.8866 0H5.14666L52.7533 54.0399L0 109.367H37.3133L87.4932 54.0399L39.8866 0Z" fill="#FF6900" />
             <path d="M93.9257 0H59.1857L106.792 54.0399L54.0391 109.367H91.3524L141.532 54.0399L93.9257 0Z"
               fill="#FF6900" />
@@ -835,29 +841,10 @@
        SCREEN 1 — WELCOME
   ════════════════════════════════════════════════════════════ -->
       <div class="screen active slide-in" id="screenWelcome">
-        <div class="welcome-badge"><span class="welcome-badge-dot"></span> 5 min &nbsp;·&nbsp; US drivers <span
-            class="welcome-badge-dot"></span></div>
-        <div class="welcome-title">We want to hear<br>from <em>real drivers.</em></div>
-        <p class="welcome-body">
-          Parking fines cost US drivers <strong>billions</strong> every year — and most people just pay up. We are
-          building a system to change that, and we need your honest take first.
-        </p>
-
-        <div class="welcome-points">
-          <div class="wp-row">
-            <div class="wp-num">1</div><span>How much parking fines have cost you in the last 2–3 years</span>
-          </div>
-          <div class="wp-row">
-            <div class="wp-num">2</div><span>Whether you have ever tried to fight one — and what happened</span>
-          </div>
-          <div class="wp-row">
-            <div class="wp-num">3</div><span>How you feel about a system that fights fines automatically</span>
-          </div>
-          <div class="wp-row">
-            <div class="wp-num">4</div><span>Your honest take on one-tap fine payment</span>
-          </div>
-        </div>
-
+        <div class="welcome-badge"><span class="welcome-badge-dot"></span> <span id="welcomeBadgeText">2 min &nbsp;·&nbsp; Loading…</span> <span class="welcome-badge-dot"></span></div>
+        <div class="welcome-title" id="welcomeTitle">We want to hear<br>from <em>real drivers.</em></div>
+        <p class="welcome-body" id="welcomeBody">Loading…</p>
+        <div class="welcome-points" id="welcomePoints"></div>
         <div class="divider"></div>
         <label class="field-label" for="nameInput">What should we call you?</label>
         <input class="name-input" type="text" id="nameInput" placeholder="Your first name" autocomplete="given-name"
@@ -869,7 +856,7 @@
           autocorrect="off" spellcheck="false" />
         <div class="field-hint" id="emailHint">Please enter a valid email address.</div>
 
-        <p class="fine-print" style="margin-top:16px;">Anonymous &nbsp;·&nbsp; No spam &nbsp;·&nbsp; 5 minutes</p>
+        <p class="fine-print" style="margin-top:16px;">Anonymous &nbsp;·&nbsp; No spam &nbsp;·&nbsp; 2 minutes</p>
       </div>
 
       <!-- ════════════════════════════════════════════════════════════
@@ -891,9 +878,9 @@
           </svg>
         </div>
         <div class="share-title">Will you share this<br>with <em>two friends?</em></div>
-        <p class="share-body">For every two friends who complete this survey, you qualify for <strong>two free parking
-            fine dispute sessions</strong> when Settlfines launches in the US.</p>
-        <div class="share-pill">2 friends = 2 free dispute sessions at launch</div>
+        <p class="share-body" id="shareBody">For every two friends who complete this survey, you qualify for <strong>two free parking
+            fine dispute sessions</strong> when Settlfines launches.</p>
+        <div class="share-pill" id="sharePill">2 friends = 2 free dispute sessions at launch</div>
 
         <div class="share-divider">Share via</div>
         <div class="share-apps">
@@ -962,8 +949,8 @@
           <button class="copy-btn" id="copyBtn" onclick="copyLink()">Copy</button>
         </div>
 
-        <div class="confirmation-box">
-          Your response has been recorded. We will reach out when Settlfines launches in the US.
+        <div class="confirmation-box" id="confirmBox">
+          Your response has been recorded. We will reach out when Settlfines launches.
         </div>
       </div>
 
@@ -979,15 +966,17 @@
   </div><!-- /outer -->
 
   <script>
-    var ENDPOINT = window.VITE_OPINAPP || 'https://your-n8n-endpoint.com/webhook/opinapp';
-    var RESEARCH_BACKEND = window.VITE_RESEARCH_BACKEND || 'https://pyepiper.outray.app/webhook/web/research';
+    var RESEARCH_BACKEND = 'https://n8n-ozwt.onrender.com/webhook/web/research';
     var userName = '';
     var userEmail = '';
+    var userIp = '';
     var answers = {};
-    var current = 0;  // 0-indexed question index
-    var SCREEN = 'welcome'; // 'welcome' | 'form' | 'share'
+    var current = 0;
+    var SCREEN = 'welcome';
+    var userCountry = 'US'; // default; updated by getCountry()
 
-    var steps = [
+    /* ── US survey steps ──────────────────────────────────── */
+    var stepsUS = [
       {
         id: 'tickets_count', type: 'choice',
         question: 'How many parking tickets have you received in the last 2–3 years?',
@@ -1049,6 +1038,116 @@
       },
     ];
 
+    /* ── UK survey steps ──────────────────────────────────── */
+    var stepsUK = [
+      {
+        id: 'tickets_count', type: 'choice',
+        question: 'How many Penalty Charge Notices (PCNs) or parking tickets have you received in the last 2–3 years?',
+        sub: 'Include council-issued PCNs, private parking charges, and clamping notices.',
+        choices: [
+          { letter: 'A', value: 'none', label: 'None — I have been lucky', earlyExit: true },
+          { letter: 'B', value: '1-2', label: '1 to 2 tickets' },
+          { letter: 'C', value: '3-5', label: '3 to 5 tickets' },
+          { letter: 'D', value: '6+', label: '6 or more' },
+        ],
+      },
+      {
+        id: 'total_paid', type: 'range',
+        question: 'Roughly how much have you paid in parking fines over the last 2–3 years?',
+        sub: 'Slide to your best estimate. Include discounted early payments and charges you paid without appealing.',
+        min: 0, max: 800, step: 20, unit: '£', default: 80,
+      },
+      {
+        id: 'ever_disputed', type: 'choice',
+        question: 'Have you ever appealed or challenged a parking ticket?',
+        sub: 'This includes informal appeals to the council or private operator, or formal POPLA / IAS appeals.',
+        choices: [
+          { letter: 'A', value: 'yes_won', label: 'Yes — and I had it cancelled' },
+          { letter: 'B', value: 'yes_lost', label: 'Yes — but I lost or gave up' },
+          { letter: 'C', value: 'no_unsure', label: 'No, I did not know I could appeal' },
+          { letter: 'D', value: 'no_effort', label: 'No — the process seemed too complicated' },
+        ],
+      },
+      {
+        id: 'pcn_type', type: 'choice',
+        question: 'What type of parking charge do you most commonly receive?',
+        sub: 'This helps us understand the UK enforcement landscape you deal with.',
+        choices: [
+          { letter: 'A', value: 'council_pcn', label: 'Council PCN (yellow lines, bay overstay)' },
+          { letter: 'B', value: 'private_charge', label: 'Private car park charge notice' },
+          { letter: 'C', value: 'bus_lane', label: 'Bus lane or moving traffic contravention' },
+          { letter: 'D', value: 'mixed', label: 'A mix of all of the above' },
+        ],
+      },
+      {
+        id: 'unexpected_feeling', type: 'choice',
+        question: 'When you received a ticket you felt was unjust, how did it make you feel?',
+        sub: 'Be honest — this is exactly what we need to understand.',
+        choices: [
+          { letter: 'A', value: 'frustrated', label: 'Frustrated, but I just paid and got on with it' },
+          { letter: 'B', value: 'powerless', label: 'Powerless — councils and operators always win' },
+          { letter: 'C', value: 'angry', label: 'Genuinely angry — I felt it was a revenue trap' },
+          { letter: 'D', value: 'indifferent', label: 'Indifferent — it is just part of driving in the UK' },
+        ],
+      },
+      {
+        id: 'want_settlfines', type: 'choice',
+        question: 'Settlfines automatically drafts and submits formal appeals using proven legal grounds — for both council PCNs and private charges. Would you use it?',
+        sub: 'No forms to fill in. No legal jargon. It reads your PCN, identifies valid grounds (signage failures, procedural errors, keeper liability rules), and submits the appeal for you.',
+        dodgeLabel: 'Probably not',
+        choices: [
+          { letter: 'A', value: 'absolutely', label: 'Absolutely — I need this now' },
+          { letter: 'B', value: 'probably', label: 'Probably, depending on the cost' },
+        ],
+      },
+      {
+        id: 'want_payment', type: 'choice',
+        question: 'Would you use a one-tap system to pay a parking charge — just photograph the notice, confirm, and done?',
+        sub: 'No council portals, no re-entering card details, no searching for reference numbers.',
+        dodgeLabel: 'No interest',
+        choices: [
+          { letter: 'A', value: 'yes', label: 'Yes — that would save real hassle' },
+          { letter: 'B', value: 'depends', label: 'Depends on the transaction fee' },
+        ],
+      },
+    ];
+
+    var steps = stepsUS; // default; overridden after country detection
+
+    /* ── Market content config ─────────────────────────────── */
+    var marketContent = {
+      US: {
+        badge: '5 min &nbsp;·&nbsp; US drivers',
+        title: 'We want to hear<br>from <em>real drivers.</em>',
+        body: 'Parking fines cost US drivers <strong>billions</strong> every year — and most people just pay up. We are building a system to change that, and we need your honest take first.',
+        points: [
+          'How much parking fines have cost you in the last 2–3 years',
+          'Whether you have ever tried to fight one — and what happened',
+          'How you feel about a system that fights fines automatically',
+          'Your honest take on one-tap fine payment',
+        ],
+        shareMsg: 'Hey! Quick survey about parking fines — takes 5 min and earns you free dispute sessions when Settlfines launches in the US: ',
+        shareBody: 'For every two friends who complete this survey, you qualify for <strong>two free parking fine dispute sessions</strong> when Settlfines launches in the US.',
+        sharePill: '2 friends = 2 free dispute sessions at US launch',
+        confirmBox: 'Your response has been recorded. We will reach out when Settlfines launches in the US.',
+      },
+      GB: {
+        badge: '5 min &nbsp;·&nbsp; UK drivers',
+        title: 'We want to hear<br>from <em>real UK drivers.</em>',
+        body: 'UK drivers pay out <strong>millions in PCNs</strong> each year — many of them perfectly challengeable. We are building a system to fight back, and we need your honest take first.',
+        points: [
+          'How many PCNs and parking charges you have received',
+          'Whether you have ever appealed — and what happened',
+          'How a system that auto-drafts appeals would change things for you',
+          'Your thoughts on one-tap PCN payment',
+        ],
+        shareMsg: 'Hey! Quick survey about parking fines — takes 5 min and earns you free appeal sessions when Settlfines launches in the UK: ',
+        shareBody: 'For every two friends who complete this survey, you qualify for <strong>two free parking fine appeal sessions</strong> when Settlfines launches in the UK.',
+        sharePill: '2 friends = 2 free appeal sessions at UK launch',
+        confirmBox: 'Your response has been recorded. We will reach out when Settlfines launches in the UK.',
+      },
+    };
+
     /* ── Screen transitions ────────────────────────────────── */
     function showScreen(name) {
       SCREEN = name;
@@ -1062,6 +1161,50 @@
     }
 
     function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+    /* ── Apply locale content to welcome & share screens ─── */
+    function applyMarketContent(countryCode) {
+      var c = marketContent[countryCode] || marketContent['US'];
+      document.getElementById('welcomeBadgeText').innerHTML = c.badge;
+      document.getElementById('welcomeTitle').innerHTML = c.title;
+      document.getElementById('welcomeBody').innerHTML = c.body;
+
+      var pointsHtml = '';
+      for (var i = 0; i < c.points.length; i++) {
+        pointsHtml += '<div class="wp-row"><div class="wp-num">' + (i + 1) + '</div><span>' + c.points[i] + '</span></div>';
+      }
+      document.getElementById('welcomePoints').innerHTML = pointsHtml;
+
+      // Store for share screen (applied when openShareScreen is called)
+      document.getElementById('shareBody').innerHTML = c.shareBody;
+      document.getElementById('sharePill').textContent = c.sharePill;
+      document.getElementById('confirmBox').textContent = c.confirmBox;
+    }
+
+    /* ── Detect country via IP ─────────────────────────────── */
+    async function getCountry() {
+      try {
+        var response = await fetch('https://ipapi.co/json/');
+        var data = await response.json();
+        var code = data.country_code; // 'US', 'GB', etc.
+        userCountry = code;
+        userIp = data.ip || '';
+        if (code === 'GB') {
+          steps = stepsUK;
+        } else {
+          steps = stepsUS;
+        }
+        applyMarketContent(code);
+      } catch (e) {
+        console.warn('Country detection failed, defaulting to US', e);
+        userCountry = 'US';
+        steps = stepsUS;
+        applyMarketContent('US');
+      }
+    }
+
+    // Run detection on load
+    getCountry();
 
     /* ── Progress ──────────────────────────────────────────── */
     function updateProgress() {
@@ -1178,20 +1321,26 @@
     function skipToShare() {
       // Submit what we have (just the no-fine answer)
       var payload = {
-        operation: 'opinion',
-        payload: {
-          name: userName,
-          email: userEmail,
-          tickets_count: 'none',
-          submitted_at: new Date().toISOString(),
-        },
+        market: userCountry,
+        name: userName,
+        email: userEmail,
+        ip_address: userIp,
+        tickets_count: 'none',
+        total_paid: 0,
+        ever_disputed: '',
+        pcn_type: '',
+        unexpected_feeling: '',
+        want_settlfines: '',
+        want_payment: '',
+        submitted_at: new Date().toISOString(),
       };
-      fetch(ENDPOINT, {
+      fetch(RESEARCH_BACKEND, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
-      }).catch(function (e) { console.warn(e); });
-      openShareScreen();
+      })
+        .catch(function (e) { console.warn('Submission error:', e); })
+        .finally(function () { openShareScreen(); });
     }
 
     function slideRange(id, input) {
@@ -1263,52 +1412,35 @@
       btn.disabled = true;
 
       var payload = {
-        operation: 'opinion',
-        payload: {
-          name: userName,
-          email: userEmail,
-          tickets_count: answers.tickets_count || '',
-          total_paid_usd: answers.total_paid !== undefined ? answers.total_paid : 0,
-          ever_disputed: answers.ever_disputed || '',
-          unexpected_feeling: answers.unexpected_feeling || '',
-          want_settlfines: answers.want_settlfines || '',
-          want_payment: answers.want_payment || '',
-          submitted_at: new Date().toISOString(),
-        },
+        market: userCountry,
+        name: userName,
+        email: userEmail,
+        ip_address: userIp,
+        tickets_count: answers.tickets_count || '',
+        total_paid: answers.total_paid !== undefined ? answers.total_paid : 0,
+        ever_disputed: answers.ever_disputed || '',
+        pcn_type: answers.pcn_type || '',
+        unexpected_feeling: answers.unexpected_feeling || '',
+        want_settlfines: answers.want_settlfines || '',
+        want_payment: answers.want_payment || '',
+        submitted_at: new Date().toISOString(),
       };
 
-      // Submit to main endpoint
-      fetch(ENDPOINT, {
+      // Submit to research backend
+      fetch(RESEARCH_BACKEND, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
-        .catch(function (e) { console.warn('Submission error:', e); });
-
-      // Submit to research backend for final submission
-      fetch(RESEARCH_BACKEND, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: userName,
-          email: userEmail,
-          survey_data: payload.payload,
-          submitted_at: new Date().toISOString(),
-        }),
-      })
-        .then(function (res) {
-          if (!res.ok) throw new Error('Research backend error: ' + res.status);
-          return res.json();
-        })
-        .then(function (data) { console.log('Research submission successful:', data); })
-        .catch(function (e) { console.warn('Research backend error:', e); })
+        .catch(function (e) { console.warn('Submission error:', e); })
         .finally(function () { openShareScreen(); });
     }
 
     /* ── Share screen ──────────────────────────────────────── */
     function openShareScreen() {
       var url = window.location.href.split('?')[0];
-      var msg = encodeURIComponent('Hey! Quick survey about parking fines — takes 5 min and earns you free dispute sessions when Settlfines launches in the US: ' + url);
+      var c = marketContent[userCountry] || marketContent['US'];
+      var msg = encodeURIComponent(c.shareMsg + url);
 
       document.getElementById('waBtn').href = 'https://wa.me/?text=' + msg;
       document.getElementById('imBtn').href = 'sms:&body=' + msg;
