@@ -973,7 +973,7 @@
     var answers = {};
     var current = 0;
     var SCREEN = 'welcome';
-    var userCountry = 'US'; // default; updated by getCountry()
+    var userCountry = 'GB'; // default; updated by getCountry()
 
     /* ── US survey steps ──────────────────────────────────── */
     var stepsUS = [
@@ -1112,7 +1112,7 @@
       },
     ];
 
-    var steps = stepsUS; // default; overridden after country detection
+    var steps = stepsUK; // default; overridden after country detection
 
     /* ── Market content config ─────────────────────────────── */
     var marketContent = {
@@ -1196,10 +1196,10 @@
         }
         applyMarketContent(code);
       } catch (e) {
-        console.warn('Country detection failed, defaulting to US', e);
-        userCountry = 'US';
-        steps = stepsUS;
-        applyMarketContent('US');
+        console.warn('Country detection failed, defaulting to UK', e);
+        userCountry = 'GB';
+        steps = stepsUK;
+        applyMarketContent('GB');
       }
     }
 
