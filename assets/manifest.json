@@ -1,0 +1,24 @@
+{
+  "name": "Settlfines Research",
+  "short_name": "Settlfines",
+  "description": "Share your parking fines experience — help us build an automated appeal system",
+  "icons": [
+    {
+      "src": "/assets/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "theme_color": "#FF6900",
+  "background_color": "#FAFAF8",
+  "display": "standalone",
+  "start_url": "/",
+  "orientation": "portrait"
+}
