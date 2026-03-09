@@ -1,8 +1,10 @@
 {
+  "buildCommand": "chmod +x build.sh && ./build.sh",
+  "outputDirectory": "dist",
   "rewrites": [
     {
       "source": "/",
-      "destination": "/opinapp.html"
+      "destination": "/index.html"
     }
   ],
   "cleanUrls": true
